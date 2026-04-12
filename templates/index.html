@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FridgeChef AI 🍳</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+    <style>
+        /* INLINE DARK MODE OVERRIDES - guaranteed to work */
+        [data-theme="dark"] body {
+            background: #0f0f1a !important;
+            color: #e8e8f0 !important;
+        }
+        [data-theme="dark"] .navbar {
+            background: #1a1a2e !important;
+            border-color: #2a2a3e !important;
+        }
+        [data-theme="dark"] .navbar h1 {
+            color: #2ecc71 !important;
+        }
+        [data-theme="dark"] .navbar span {
+            color: #aaa !important;
+        }
+        [data-theme="dark"] .nav-link {
+            color: #aaa !important;
+            border-color: #2a2a3e !important;
+        }
+        [data-theme="dark"] .hero {
+            background: linear-gradient(135deg, #1a7a45 0%, #155a33 100%) !important;
+        }
+        [data-theme="dark"] .recipe-form,
+        [data-theme="dark"] .recipe-box,
+        [data-theme="dark"] .recipe-card,
+        [data-theme="dark"] .history-section {
+            background: #1a1a2e !important;
+            border-color: #2a2a3e !important;
+        }
+        [data-theme="dark"] .form-group input,
+        [data-theme="dark"] .form-group select {
+            background: #0f0f1a !important;
+            border-color: #2a2a3e !important;
+            color: #e8e8f0 !important;
+        }
+        [data-theme="dark"] .form-group label {
+            color: #aaa !important;
+        }
+        [data-theme="dark"] .recipe-content {
+            color: #ddd !important;
+        }
+        [data-theme="dark"] .recipe-box h2,
+        [data-theme="dark"] .page-title,
+        [data-theme="dark"] .history-section h3 {
+            color: #e8e8f0 !important;
+        }
+        [data-theme="dark"] .recipe-box h2 {
+            border-color: #2a2a3e !important;
+        }
+        [data-theme="dark"] .recipe-actions {
+            border-color: #2a2a3e !important;
+        }
+        [data-theme="dark"] .step-box {
+            background: #0f0f1a !important;
+            color: #e8e8f0 !important;
+            border-color: #2a2a3e !important;
+        }
+        [data-theme="dark"] .cooking-mode-box {
+            background: #111825 !important;
+            border-color: #1a7a45 !important;
+        }
+        [data-theme="dark"] .history-item {
+            background: #0f0f1a !important;
+            border-color: #2a2a3e !important;
+        }
+        [data-theme="dark"] .history-ingredients {
+            color: #ddd !important;
+        }
+        [data-theme="dark"] .nutrition-box {
+            background: #111825 !important;
+            border-color: #1a7a45 !important;
+        }
+        [data-theme="dark"] .nutrition-item {
+            background: #1a1a2e !important;
+            border-color: #2a2a3e !important;
+        }
+        [data-theme="dark"] .nutrition-label {
+            color: #aaa !important;
+        }
+        [data-theme="dark"] .btn-secondary {
+            background: #1a1a2e !important;
+            color: #ddd !important;
+            border-color: #2a2a3e !important;
+        }
+        [data-theme="dark"] .btn-cook,
+        [data-theme="dark"] .btn-save,
+        [data-theme="dark"] .btn-whatsapp,
+        [data-theme="dark"] .btn-email,
+        [data-theme="dark"] .btn-copy {
+            background: #1a1a2e !important;
+        }
+        [data-theme="dark"] .dark-toggle {
+            border-color: #2a2a3e !important;
+            color: #aaa !important;
+        }
+        [data-theme="dark"] .error-box {
+            background: #1a1500 !important;
+            color: #f0c060 !important;
+        }
+        [data-theme="dark"] .step-progress {
+            background: #1a3a2a !important;
+            color: #2ecc71 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <h1>🍳 FridgeChef AI</h1>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <span style="font-size:14px; color:#666;">
+                👤 {{ current_user.username }}
+            </span>
+            <button onclick="toggleDarkMode()" class="dark-toggle" id="themeBtn">
+                🌙 Dark Mode
+            </button>
+            <a href="/favourites" class="nav-link">❤️ Saved</a>
+            <a href="/logout" class="nav-link" style="color:#e74c3c; border-color:#e74c3c;">
+                🚪 Logout
+            </a>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <div class="hero">
+        <h2>What's in your fridge?</h2>
+        <p>Enter your ingredients and get a delicious AI-powered recipe!</p>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container">
+
+        <!-- INPUT FORM -->
+        <form method="POST" class="recipe-form">
+            <div class="form-group">
+                <label>🥕 Enter Ingredients (comma separated)</label>
+                <input
+                    type="text"
+                    name="ingredients"
+                    placeholder="e.g. eggs, tomato, cheese, bread"
+                    value="{{ ingredients }}"
+                    required
+                />
+            </div>
+
+            <div class="form-group">
+                <label>🥗 Diet Type</label>
+                <select name="diet_type">
+                    <option value="any" {% if diet_type == 'any' %}selected{% endif %}>Any</option>
+                    <option value="vegetarian" {% if diet_type == 'vegetarian' %}selected{% endif %}>Vegetarian</option>
+                    <option value="vegan" {% if diet_type == 'vegan' %}selected{% endif %}>Vegan</option>
+                    <option value="non-vegetarian" {% if diet_type == 'non-vegetarian' %}selected{% endif %}>Non-Vegetarian</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-primary">🔍 Generate Recipe</button>
+        </form>
+
+        <!-- ERROR MESSAGE -->
+        {% if error %}
+        <div class="error-box">
+            ⚠️ {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- RECIPE OUTPUT -->
+        {% if recipe %}
+        <div class="recipe-box">
+            <h2>🍽️ Your Recipe</h2>
+
+            <!-- NUTRITION INFO -->
+            {% if nutrition %}
+            <div class="nutrition-box">
+                {% for line in nutrition.split('\n') %}
+                    {% if 'CALORIES' in line and ':' in line %}
+                    <div class="nutrition-item">
+                        <span class="nutrition-value">{{ line.split(':')[1].strip() }}</span>
+                        <span class="nutrition-label">Calories</span>
+                    </div>
+                    {% elif 'PROTEIN' in line and ':' in line %}
+                    <div class="nutrition-item">
+                        <span class="nutrition-value">{{ line.split(':')[1].strip() }}</span>
+                        <span class="nutrition-label">Protein</span>
+                    </div>
+                    {% elif 'CARBS' in line and ':' in line %}
+                    <div class="nutrition-item">
+                        <span class="nutrition-value">{{ line.split(':')[1].strip() }}</span>
+                        <span class="nutrition-label">Carbs</span>
+                    </div>
+                    {% elif 'FAT' in line and ':' in line %}
+                    <div class="nutrition-item">
+                        <span class="nutrition-value">{{ line.split(':')[1].strip() }}</span>
+                        <span class="nutrition-label">Fat</span>
+                    </div>
+                    {% elif 'FIBER' in line and ':' in line %}
+                    <div class="nutrition-item">
+                        <span class="nutrition-value">{{ line.split(':')[1].strip() }}</span>
+                        <span class="nutrition-label">Fiber</span>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- FULL RECIPE TEXT -->
+            <div class="recipe-content" id="fullRecipe">{{ recipe }}</div>
+
+            <!-- COOKING MODE -->
+            <div id="cookingMode" style="display:none;" class="cooking-mode-box">
+                <h3>👨‍🍳 Cooking Mode</h3>
+                <div id="stepDisplay" class="step-box"></div>
+                <div class="step-controls">
+                    <button onclick="prevStep()" class="btn-secondary">⬅️ Previous</button>
+                    <span id="stepCounter" class="step-progress"></span>
+                    <button onclick="nextStep()" class="btn-secondary">Next ➡️</button>
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div class="recipe-actions">
+                <button onclick="toggleCookingMode()" class="btn-cook">
+                    👨‍🍳 Start Cooking Mode
+                </button>
+
+                <form method="POST" action="/save" style="display:inline; margin:0;">
+                    <input type="hidden" name="title" value="AI Generated Recipe" />
+                    <input type="hidden" name="ingredients" value="{{ ingredients }}" />
+                    <input type="hidden" name="steps" value="{{ recipe }}" />
+                    <input type="hidden" name="diet_type" value="{{ diet_type }}" />
+                    <button type="submit" class="btn-save">❤️ Save Recipe</button>
+                </form>
+
+                <button onclick="shareWhatsApp()" class="btn-whatsapp">
+                    💬 WhatsApp
+                </button>
+
+                <button onclick="shareEmail()" class="btn-email">
+                    📧 Email
+                </button>
+
+                <button onclick="copyRecipe()" class="btn-copy" id="copyBtn">
+                    📋 Copy
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- RECIPE HISTORY -->
+        {% if history_list %}
+        <div class="history-section">
+            <h3>📜 Recent Recipes</h3>
+            {% for item in history_list %}
+            <div class="history-item">
+                <div>
+                    <div class="history-ingredients">🥕 {{ item.ingredients }}</div>
+                    <div class="history-meta">
+                        {{ item.diet_type }} • {{ item.generated_at.strftime('%d %b, %I:%M %p') }}
+                    </div>
+                </div>
+                <form method="POST" style="margin:0;">
+                    <input type="hidden" name="ingredients" value="{{ item.ingredients }}" />
+                    <input type="hidden" name="diet_type" value="{{ item.diet_type }}" />
+                    <button type="submit" class="btn-regenerate">↻ Regenerate</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    </div>
+
+    <script>
+        // ── DARK MODE ──
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const btn = document.getElementById('themeBtn');
+            if (html.getAttribute('data-theme') === 'dark') {
+                html.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                btn.innerText = '🌙 Dark Mode';
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                btn.innerText = '☀️ Light Mode';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('themeBtn');
+            if (localStorage.getItem('theme') === 'dark') {
+                btn.innerText = '☀️ Light Mode';
+            }
+        });
+
+        // ── COOKING MODE ──
+        function getSteps() {
+            const recipeText = document.getElementById('fullRecipe').innerText;
+            const lines = recipeText.split('\n');
+            return lines.filter(line => line.trim().match(/^Step \d+:/i));
+        }
+
+        let currentStep = 0;
+        let steps = [];
+
+        function toggleCookingMode() {
+            steps = getSteps();
+            if (steps.length === 0) {
+                document.getElementById('cookingMode').style.display = 'block';
+                document.getElementById('stepDisplay').innerHTML = `
+                    <div style="text-align:center; padding:20px; color:#e74c3c;">
+                        No steps found! Make sure recipe has Step 1:, Step 2: format.
+                    </div>`;
+                return;
+            }
+            currentStep = 0;
+            document.getElementById('fullRecipe').style.display = 'none';
+            document.getElementById('cookingMode').style.display = 'block';
+            showStep();
+        }
+
+        function showStep() {
+            document.getElementById('stepDisplay').innerText = steps[currentStep];
+            document.getElementById('stepCounter').innerText =
+                `Step ${currentStep + 1} of ${steps.length}`;
+        }
+
+        function nextStep() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                showStep();
+            } else {
+                document.getElementById('stepDisplay').innerHTML = `
+                    <div style="text-align:center; padding:30px 20px;">
+                        <div style="font-size:48px; margin-bottom:16px;">🎉</div>
+                        <h3 style="font-size:20px; font-weight:700; color:#27ae60; margin-bottom:8px;">
+                            All Steps Completed!
+                        </h3>
+                        <p style="color:#666; font-size:15px;">
+                            Your meal is ready. Enjoy your food!
+                        </p>
+                    </div>`;
+                document.getElementById('stepCounter').innerText = 'Done!';
+                document.getElementById('stepCounter').style.background = '#e8f8f0';
+                document.getElementById('stepCounter').style.color = '#27ae60';
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                showStep();
+            }
+        }
+
+        // ── WHATSAPP SHARE ──
+        function shareWhatsApp() {
+            const recipe = document.getElementById('fullRecipe').innerText;
+            const text = encodeURIComponent("Check out this recipe from FridgeChef AI!\n\n" + recipe);
+            window.open("https://wa.me/?text=" + text, '_blank');
+        }
+
+        // ── EMAIL SHARE ──
+        function shareEmail() {
+            const recipe = document.getElementById('fullRecipe').innerText;
+            const subject = encodeURIComponent("Delicious Recipe from FridgeChef AI");
+            const body = encodeURIComponent(recipe);
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        }
+
+        // ── COPY RECIPE ──
+        function copyRecipe() {
+            const recipe = document.getElementById('fullRecipe').innerText;
+            navigator.clipboard.writeText(recipe).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.innerText = '✅ Copied!';
+                btn.style.background = '#e8f8f0';
+                btn.style.color = '#27ae60';
+                setTimeout(() => {
+                    btn.innerText = '📋 Copy';
+                    btn.style.background = '';
+                    btn.style.color = '';
+                }, 2000);
+            });
+        }
+    </script>
+
+</body>
+</html>

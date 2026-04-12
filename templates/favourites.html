@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Saved Recipes ❤️</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <h1>🍳 FridgeChef AI</h1>
+        <a href="/" class="nav-link">🏠 Home</a>
+    </nav>
+
+    <div class="container">
+        <h2 class="page-title">❤️ Saved Recipes</h2>
+
+        {% if recipes %}
+            {% for recipe in recipes %}
+            <div class="recipe-card">
+                <div class="card-header">
+                    <h3>🍽️ {{ recipe.title }}</h3>
+                    <span class="diet-badge">{{ recipe.diet_type }}</span>
+                </div>
+                <p><strong>🥕 Ingredients:</strong> {{ recipe.ingredients }}</p>
+                <div class="card-steps">
+                    <strong>📋 Recipe:</strong>
+                    <pre>{{ recipe.steps }}</pre>
+                </div>
+                <div class="card-footer">
+                    <small>Saved on: {{ recipe.saved_at.strftime('%d %b %Y, %I:%M %p') }}</small>
+                    <a href="/delete/{{ recipe.id }}" class="btn-delete"
+                       onclick="return confirm('Delete this recipe?')">
+                        🗑️ Delete
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <h3>No saved recipes yet!</h3>
+                <p>Go generate a recipe and save it ❤️</p>
+                <a href="/" class="btn-primary">🍳 Generate Recipe</a>
+            </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>
