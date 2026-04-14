@@ -1,4 +1,7 @@
 flask
 flask-sqlalchemy
-google-generativeai
+flask-login
+groq
 python-dotenv
+werkzeug
+gunicorn
